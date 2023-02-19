@@ -7,7 +7,10 @@ RUN apt update && \
 
 FROM nginx:1.15-alpine
 
-RUN apk add --update netcat-openbsd
+COPY start.sh .
+
+RUN apk add --update netcat-openbsd && \
+     apk add --update bash
 
 RUN rm /etc/nginx/conf.d/default.conf
 

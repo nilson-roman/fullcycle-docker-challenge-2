@@ -30,6 +30,7 @@ services:
     container_name: nginx
     build:
       context: ./nginx
+    entrypoint: wait-for app:3000 -t 60 -- ./start.sh
     networks: 
       - node-network
     ports:
