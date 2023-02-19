@@ -7,53 +7,54 @@ const config = {
     host: 'db',
     user: 'root',
     password: 'root',
-    database:'nodedb'
+    database: 'nodedb'
 };
 
-const randomName = names.random();
-
-const getNames = sqlSelectResult => {
-    if(sqlSelectResult) {
-        return sqlSelectResult.map(e => `<li>${e.name}</li>`).join('')
-    }
-}
-
-const databaseInit = () => {
+const queryExecute = async query => {
     const connection = mysql.createConnection(config)
-    const sql_create = `CREATE TABLE IF NOT EXISTS people(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY(id))`;
-    const sql_insert = `INSERT INTO people(name) values('${randomName}')`
 
-    connection.query(sql_create)
-    connection.query(sql_insert)
-
-    connection.end()
-}
-
-const databaseGetNames = async () => {
-    const connection = mysql.createConnection(config)
-    const sqlNamesQuery = `select name from people`
-    
     const result = new Promise((resolve, reject) => {
-        connection.query(sqlNamesQuery, (err, result) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(result);
-          }
+        connection.query(query, (err, result) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(result);
+            }
         });
     })
-      
+
     connection.end()
 
-    const resultList = await result
-    return getNames(resultList)
+    return await result
 }
 
-databaseInit()
+app.get('/', async (req, res) => {
+    const randomName = names.random();
 
-app.get('/', async (req,res) => {
+    const getNames = async queryResult => {
+        const result = await queryResult
+        if (result) {
+            return result.map(e => `<li>${e.name}</li>`).join('')
+        }
+    }
+
+    const databaseInit = async () => {
+        const sqlCreate = `CREATE TABLE IF NOT EXISTS people(id int NOT NULL AUTO_INCREMENT, name varchar(255) NOT NULL, PRIMARY KEY(id))`;
+        const sqlInsert = `INSERT INTO people(name) values('${randomName}')`
+        await queryExecute(sqlCreate)
+        await queryExecute(sqlInsert)
+    }
+
+    const databaseGetNames = async () => {
+        const sqlNamesQuery = `select name from people`
+        const result = await queryExecute(sqlNamesQuery)
+        return await getNames(result)
+    }
+
+    await databaseInit()
+    
     const namesListItems = await databaseGetNames()
-    const html = 
+    const html =
         `
             <h1>Full Cycle</h1>
             <ul>
@@ -63,6 +64,6 @@ app.get('/', async (req,res) => {
     res.send(html)
 })
 
-app.listen(port, ()=> {
+app.listen(port, () => {
     console.log('Rodando na porta ' + port)
 })
